@@ -1,0 +1,49 @@
+---
+title: "Bessel's Correction"
+output:
+  html_document:
+    css: "r_style.css"
+    highlight: pygments
+    includes: 
+      in_header: r_header.html
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r, echo=FALSE}
+set.seed(314159)
+```
+[.Rmd file for this article](https://regriffiths.github.io/rprojects/bessels-correction.Rmd)
+
+When you take A Level maths in the UK, the first statistical estimator you learn after the sample mean, $\bar{x}$, is the sample variance, $$s^2=\displaystyle\frac{1}{n-1}\sum_{i=1}^n(x_i-\bar{x})^2.$$
+
+This formula prompts the question: Why are we dividing by $n-1$ rather than $n$? If the variance is a measure of the spread of the data around the mean, why are we not taking the exact average of $(x_i-\bar{x})^2$?
+
+Let's use the example of a random variable $X$, with mean $0$ and variance $1$. We can take a sample of size $20$ from $X$ and use it to find the sample mean, $\bar{x}$.
+```{r}
+sample_xs <- rnorm(20,0,1) # generate random sample from X
+sample_mean <- mean(sample_xs)
+sample_mean
+```
+
+This is obviously somewhat different from our true mean of $0$. Now suppose we want to use our sample of size 20 to estimate the variance of $X$. Our first thought might be to take the average of the squared distance of each $x_i$ in our sample from our calculated sample mean. To see a problem with this approach let's plot our sample, sample mean and true mean along with the probability density function for $X\sim N(0,1)$.
+```{r, echo=FALSE}
+par(mar=c(3,5,2,2))
+```
+
+```{r, fig.height=6, fig.width=9}
+x <- seq(-4,4,0.01) # x-axis
+plot(x,dnorm(x),type="l", lwd=1.5, xlab="", ylab="") # plot P(X=x)
+points(sample_xs, rep(0,20), pch=4, lwd=1.5, col="#00ac72")
+abline(v=0, lwd=1.5, col="#00bafc")
+abline(v=sample_mean, lwd=1.5, col="#eb9928")
+legend("topright", legend=c("P(X=x)", "True Mean", "Sample Points", "Sample Mean"), 
+       col=c("black", "#00bafc", "#00ac72", "#eb9928"), 
+       lty=c(1,1,NA,1), pch=c(NA,NA,4,NA), lwd=rep(1.5,4))
+```
+
+The sample points are inevitably closer on average to the sample mean than to the true mean, because the sample mean is by definition the value with the minimum average distance to the sample points. So if we calculate the variance by averaging the squared distance of our samples from the sample mean, we are always going to underestimate the true variance - the samples will seem to deviate less from the mean than they actually do. This means that $$s_B^2=\displaystyle\frac{1}{n}\sum_{i=1}^n(x_i-\bar{x})^2$$ is a biased estimator for the population variance, $\sigma^2$.
+
+For the maths behind why we divide by $(n-1)$ exactly, I recommend [this article](http://www.crataegus.me.uk/thoughts/bessel_correction.html) by Matthew Smith.

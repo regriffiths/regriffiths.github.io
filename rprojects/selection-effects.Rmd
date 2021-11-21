@@ -1,0 +1,104 @@
+---
+title: "Selection Effects"
+output:
+  html_document:
+    css: "r_style.css"
+    highlight: pygments
+    includes: 
+      in_header: r_header.html
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+```{r, echo=FALSE}
+set.seed(314159)
+```
+[.Rmd file for this article](https://regriffiths.github.io/rprojects/selection-effects.Rmd)
+
+One of the easiest statistical mistakes to make is to assume that a sample is representative of its parent population, when in fact the way it was collected has led to a **selection bias**. Perhaps the most famous example of this is survivorship bias, as illustrated in the story of [Abraham Wald and the Missing Bullet Holes](https://medium.com/@penguinpress/an-excerpt-from-how-not-to-be-wrong-by-jordan-ellenberg-664e708cfc3d). In this article I will discuss two [veridical paradoxes](https://en.wikipedia.org/wiki/Paradox#Quine's_classification) arising from selection effects.
+
+# Berkson's Paradox
+Imagine that we have a virus 'colliditus', and that the severity of disease experienced by people who catch colliditus is uncorrelated with the number of cigarettes they smoke in a day. For the sake of argument we assume that the average number of cigarettes of smoked a day and the severity of disease are uniformly distributed in the population. So if we plotted a random sample of the population, it would look like this.
+
+```{r, echo=FALSE}
+par(mar=c(5,5,2,2))
+```
+
+```{r, fig.height=6, fig.width=9}
+n <- 1000
+population <- array(0,dim=c(2,n)) # initialise empty array to store data for each person
+for (i in 1:n) {
+  severity <- runif(1,0,20) # random severity
+  cigarettes <- runif(1,0,20) # random average number of cigarettes smoked
+  population[1,i] <- severity
+  population[2,i] <- cigarettes
+}
+plot(population[1,], population[2,],
+     xlab="Severity of Colliditus Score", ylab="Average Number of Cigarettes Smoked in a Day")
+abline(lm(population[1,] ~ population[2,]), col="red") # plot line of best fit
+
+```
+
+Now suppose that out of this sample, all the people with a colliditus severity score $\geq5$ are in hospital, and of those with a colliditus severity score $<5$, those who smoke $\geq10$ cigarettes a day on average have a $0.75$ chance of being in hospital, compared to a $0.05$ chance for those who smoke $<10$ cigarettes a day on average. If we plot cigarettes vs colliditus severity of only those in our sample who are hospitalised, we see an interesting result.
+
+```{r, fig.height=6, fig.width=9}
+hospital_severities <- vector() 
+hospital_cigarettes <- vector()
+for (i in 1:n) {
+  dice_roll <- runif(1,0,1) # random number between 0 and 1
+  person_i <- population[,i]
+  if(person_i[1] >= 10) { # all these people are in hospital
+    hospital_severities[i] <- person_i[1]
+    hospital_cigarettes[i] <- person_i[2]
+  } else if(person_i[2] >= 10 && dice_roll <= 0.75) { # these people have a 75% chance of being in hospital
+    hospital_severities[i] <- person_i[1]
+    hospital_cigarettes[i] <- person_i[2]
+  }
+  else if(dice_roll <= 0.05) { # others have a 5% chance of being in hospital
+    hospital_severities[i] <- person_i[1]
+    hospital_cigarettes[i] <- person_i[2]
+  }  
+}
+
+plot(hospital_severities, hospital_cigarettes,
+     xlab="Severity of Colliditus Score", ylab="Average Number of Cigarettes Smoked in a Day")
+abline(lm(hospital_severities ~ hospital_cigarettes), col="red") # plot line of best fit
+
+```
+
+If we took the hospitalised population as representative of the general population we would find that there is a negative association between average number of cigarettes smoked in a day and severity of colliditus. But we would be failing to account for the fact that having a severe case of colliditus, and smoking a large number of cigarettes per day are both factors that make you more likely to be in hospital. So if you are in hospital with a low colliditus score, you are more likely to smoke a lot of cigarettes than if you are in hospital with a high colliditus score, since there must be some other reason for your hospitalisation than colliditus, and this reason may be smoking. 
+
+This is Berkson's paradox, the phenomenon whereby two factors falsely appear to have a correlation because they both influence selection into a sample. In [this article](https://thehardestscience.com/2014/08/04/the-selection-distortion-effect-how-selection-changes-correlations-in-surprising-ways/) Sanjay Srivastava gives a fun example of Berkson's paradox; he recalls believing burger quality and fry quality were negatively correlated in his town burger restaurants, not accounting for the fact that he never visited the restaurants where both burgers and fries were poor quality. The bias arising from multiple characteristics influencing the chance of selection into a sample is known as 'collider bias', and we say that these characteristics 'collide' on selection[^1]. 
+
+# The Inspection Paradox
+This section was inspired by Jake VanderPlas' article [The Waiting Time Paradox](https://jakevdp.github.io/blog/2018/09/13/waiting-time-paradox/). Suppose you have a lamp for which you always use the same type of light bulb, which has an expected lifetime of 1000 hours. As soon as one light bulb blows, you replace it with the next one. At a random point in time, I arrive and observe your lamp. How long should I expect the light bulb to last from the time I first observe it? We might expect it to be 500 hours. However, if we run a simulation with 1000 light bulb failures, and 1000 random observation times, we get a surprising result.
+
+```{r}
+n_of_failures <- 1000
+failure_times <- runif(n_of_failures,0,1) * n_of_failures * 1000
+ordered_failure_times <- sort(failure_times)
+intervals <- diff(ordered_failure_times)
+print(mean(intervals))
+n_of_obs_times <- 1000
+wait_times <- rep(0,n_of_obs_times)
+observation_times <- runif(n_of_obs_times,0,1) * max(ordered_failure_times)
+for (i in 1:n_of_obs_times) {
+  observation_time <- observation_times[i]
+  for (j in ordered_failure_times) {
+    if (observation_time < j) {
+      wait_times[i] <- j - observation_time
+      break
+    }
+    else {next}
+  }
+} 
+print(mean(wait_times))
+```
+
+It turns out that the expected value of my wait time is the same as the expected lifetime of the light bulbs! To get some intuition for why this is, consider the fact that if a light bulb blows 1 hour after being screwed in, I am much less likely to arrive in time to observe it than if it blows after 2000 hours. So light bulbs with a longer lifetime are over represented in my observations. For the maths on why my expected wait time is exactly 1000 hours, see Jake VanderPlas' article. [This post](https://towardsdatascience.com/the-inspection-paradox-is-everywhere-2ef1c2e9d709) by Alan Downey also has some interesting examples of the inspection paradox in action.
+
+[^1]: Annie Herbert et al. “The spectre of Berkson’s paradox: Collider bias in
+Covid-19 research”. In: *Significance* 17.4 (2020), pp. 6–7. doi: [10.1111/1740-9713.01413](https://
+doi.org/10.1111/1740-9713.01413).
