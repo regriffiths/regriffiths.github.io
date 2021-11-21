@@ -30,18 +30,16 @@ sample_mean
 
 This is obviously somewhat different from our true mean of $0$. Now suppose we want to use our sample of size 20 to estimate the variance of $X$. Our first thought might be to take the average of the squared distance of each $x_i$ in our sample from our calculated sample mean. To see a problem with this approach let's plot our sample, sample mean and true mean along with the probability density function for $X\sim N(0,1)$.
 ```{r, echo=FALSE}
-par(mar=c(3,5,2,2))
+par(mar=c(5,3,2,2))
 ```
 
 ```{r, fig.height=6, fig.width=9}
 x <- seq(-4,4,0.01) # x-axis
-plot(x,dnorm(x),type="l", lwd=1.5, xlab="", ylab="") # plot P(X=x)
+plot(x,dnorm(x),type="l", lwd=1.5, ylab="") # plot P(X=x)
 points(sample_xs, rep(0,20), pch=4, lwd=1.5, col="#00ac72")
 abline(v=0, lwd=1.5, col="#00bafc")
 abline(v=sample_mean, lwd=1.5, col="#eb9928")
-legend("topright", legend=c("P(X=x)", "True Mean", "Sample Points", "Sample Mean"), 
-       col=c("black", "#00bafc", "#00ac72", "#eb9928"), 
-       lty=c(1,1,NA,1), pch=c(NA,NA,4,NA), lwd=rep(1.5,4))
+legend("topright", legend=c("P(X=x)", "True Mean", "Sample Points", "Sample Mean"), col=c("black", "#00bafc", "#00ac72", "#eb9928"), lty=c(1,1,NA,1), pch=c(NA,NA,4,NA), lwd=rep(1.5,4))
 ```
 
 The sample points are inevitably closer on average to the sample mean than to the true mean, because the sample mean is by definition the value with the minimum average distance to the sample points. So if we calculate the variance by averaging the squared distance of our samples from the sample mean, we are always going to underestimate the true variance - the samples will seem to deviate less from the mean than they actually do. This means that $$s_B^2=\displaystyle\frac{1}{n}\sum_{i=1}^n(x_i-\bar{x})^2$$ is a biased estimator for the population variance, $\sigma^2$.

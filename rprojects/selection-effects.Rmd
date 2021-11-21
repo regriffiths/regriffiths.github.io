@@ -23,7 +23,7 @@ One of the easiest statistical mistakes to make is to assume that a sample is re
 Imagine that we have a virus 'colliditus', and that the severity of disease experienced by people who catch colliditus is uncorrelated with the number of cigarettes they smoke in a day. For the sake of argument we assume that the average number of cigarettes of smoked a day and the severity of disease are uniformly distributed in the population. So if we plotted a random sample of the population, it would look like this.
 
 ```{r, echo=FALSE}
-par(mar=c(5,5,2,2))
+par(mar=c(5,3,2,2))
 ```
 
 ```{r, fig.height=6, fig.width=9}
