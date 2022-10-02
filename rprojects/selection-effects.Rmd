@@ -1,11 +1,6 @@
 ---
 title: "Selection Effects"
-output:
-  html_document:
-    css: "r_style.css"
-    highlight: pygments
-    includes: 
-      in_header: r_header.html
+output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,11 +32,11 @@ for (i in 1:n) {
 }
 plot(population[1,], population[2,],
      xlab="Severity of Colliditus Score", ylab="Average Number of Cigarettes Smoked in a Day")
-abline(lm(population[1,] ~ population[2,]), col="red") # plot line of best fit
+abline(lm(population[1,] ~ population[2,]), col="#00bafc", lwd=2) # plot line of best fit
 
 ```
 
-Now suppose that out of this sample, all the people with a colliditus severity score $\geq5$ are in hospital, and of those with a colliditus severity score $<5$, those who smoke $\geq10$ cigarettes a day on average have a $0.75$ chance of being in hospital, compared to a $0.05$ chance for those who smoke $<10$ cigarettes a day on average. If we plot cigarettes vs colliditus severity of only those in our sample who are hospitalised, we see an interesting result.
+Now suppose that out of this sample, all the people with a colliditus severity score $\geq15$ are in hospital, and of those with a colliditus severity score $<15$, those who smoke $\geq10$ cigarettes a day on average have a $0.75$ chance of being in hospital, compared to a $0.05$ chance for those who smoke $<10$ cigarettes a day on average. If we plot cigarettes vs colliditus severity of only those in our sample who are hospitalised, we see an interesting result.
 
 ```{r, fig.height=6, fig.width=9}
 hospital_severities <- vector() 
@@ -49,7 +44,7 @@ hospital_cigarettes <- vector()
 for (i in 1:n) {
   dice_roll <- runif(1,0,1) # random number between 0 and 1
   person_i <- population[,i]
-  if(person_i[1] >= 10) { # all these people are in hospital
+  if(person_i[1] >= 15) { # all these people are in hospital
     hospital_severities[i] <- person_i[1]
     hospital_cigarettes[i] <- person_i[2]
   } else if(person_i[2] >= 10 && dice_roll <= 0.75) { # these people have a 75% chance of being in hospital
@@ -59,13 +54,17 @@ for (i in 1:n) {
   else if(dice_roll <= 0.05) { # others have a 5% chance of being in hospital
     hospital_severities[i] <- person_i[1]
     hospital_cigarettes[i] <- person_i[2]
-  }  
+  }
+  else { # the people not in hospital
+    hospital_severities[i] <- NA
+    hospital_cigarettes[i] <- NA
+  }
 }
-
+hospital_severities <- na.omit(hospital_severities) # remove the people not in hospital from the sample
+hospital_cigarettes <- na.omit(hospital_cigarettes)
 plot(hospital_severities, hospital_cigarettes,
      xlab="Severity of Colliditus Score", ylab="Average Number of Cigarettes Smoked in a Day")
-abline(lm(hospital_severities ~ hospital_cigarettes), col="red") # plot line of best fit
-
+abline(lm(hospital_severities ~ hospital_cigarettes), col="#00bafc", lwd=2) # plot line of best fit
 ```
 
 If we took the hospitalised population as representative of the general population we would find that there is a negative association between average number of cigarettes smoked in a day and severity of colliditus. But we would be failing to account for the fact that having a severe case of colliditus, and smoking a large number of cigarettes per day are both factors that make you more likely to be in hospital. So if you are in hospital with a low colliditus score, you are more likely to smoke a lot of cigarettes than if you are in hospital with a high colliditus score, since there must be some other reason for your hospitalisation than colliditus, and this reason may be smoking. 
@@ -73,32 +72,60 @@ If we took the hospitalised population as representative of the general populati
 This is Berkson's paradox, the phenomenon whereby two factors falsely appear to have a correlation because they both influence selection into a sample. In [this article](https://thehardestscience.com/2014/08/04/the-selection-distortion-effect-how-selection-changes-correlations-in-surprising-ways/) Sanjay Srivastava gives a fun example of Berkson's paradox; he recalls believing burger quality and fry quality were negatively correlated in his town burger restaurants, not accounting for the fact that he never visited the restaurants where both burgers and fries were poor quality. The bias arising from multiple characteristics influencing the chance of selection into a sample is known as 'collider bias', and we say that these characteristics 'collide' on selection[^1]. 
 
 # The Inspection Paradox
-This section was inspired by Jake VanderPlas' article [The Waiting Time Paradox](https://jakevdp.github.io/blog/2018/09/13/waiting-time-paradox/). Suppose you have a lamp for which you always use the same type of light bulb, which has an expected lifetime of 1000 hours. As soon as one light bulb blows, you replace it with the next one. At a random point in time, I arrive and observe your lamp. How long should I expect the light bulb to last from the time I first observe it? We might expect it to be 500 hours. However, if we run a simulation with 1000 light bulb failures, and 1000 random observation times, we get a surprising result.
+This section was inspired by Allen Downey's article [The Inspection Paradox is Everywhere](https://towardsdatascience.com/the-inspection-paradox-is-everywhere-2ef1c2e9d709). Imagine a school year with $100$ students and $5$ classes, but suppose that instead of each class having $20$ students the class sizes are $35$, $35$, $10$, $10$, and $10$. The average class size is still $20$ since $$\frac{35+35+10+10+10}{5}=\frac{100}{5}=20.$$ Now, if we randomly sample half of the students and ask them size class they are in what will the mean of their responses be?
 
 ```{r}
-n_of_failures <- 1000
-failure_times <- runif(n_of_failures,0,1) * n_of_failures * 1000
-ordered_failure_times <- sort(failure_times)
-intervals <- diff(ordered_failure_times)
-print(mean(intervals))
-n_of_obs_times <- 1000
-wait_times <- rep(0,n_of_obs_times)
-observation_times <- runif(n_of_obs_times,0,1) * max(ordered_failure_times)
-for (i in 1:n_of_obs_times) {
-  observation_time <- observation_times[i]
-  for (j in ordered_failure_times) {
-    if (observation_time < j) {
-      wait_times[i] <- j - observation_time
-      break
-    }
-    else {next}
+# we label the students 1-100, and say that students 1-35 are in Class 1, 
+# students 36-70 are in Class 2, etc
+random_sample <- sample(100,size=50) # randomly choosing half the students
+responses <- rep(NA,50) # initialise a vector to store their reponses
+for (i in 1:50) {
+  if (random_sample[i] <= 35) {
+    responses[i] <- 35
   }
-} 
-print(mean(wait_times))
+  else if (random_sample[i] <= 70) {
+    responses[i] <- 35
+  }
+  else if (random_sample[i] <= 80) {
+    responses[i] <- 10
+  }
+  else if (random_sample[i] <= 90) {
+    responses[i] <- 10
+  }
+  else {
+    responses[i] <- 10
+  }
+}
+mean(responses)
 ```
 
-It turns out that the expected value of my wait time is the same as the expected lifetime of the light bulbs! To get some intuition for why this is, consider the fact that if a light bulb blows 1 hour after being screwed in, I am much less likely to arrive in time to observe it than if it blows after 2000 hours. So light bulbs with a longer lifetime are over represented in my observations. For the maths on why my expected wait time is exactly 1000 hours, see Jake VanderPlas' article. [This post](https://towardsdatascience.com/the-inspection-paradox-is-everywhere-2ef1c2e9d709) by Alan Downey also has some interesting examples of the inspection paradox in action.
+This number seems high compared to the average class size of $20$ that we know the teachers of this year would report. Let's see whether this effect is replicated when we take more random samples.
+
+```{r}
+random_sample_2 <- sample(100,size=50) # let's take 5 more random samples of 50
+random_sample_3 <- sample(100,size=50)
+random_sample_4 <- sample(100,size=50)
+random_sample_5 <- sample(100,size=50)
+random_sample_6 <- sample(100,size=50)
+num_large_2 <- sum(random_sample_2 <= 70) # students 1-70 are in classes which have 35 students
+num_small_2 <- 50 - num_large_2 # the rest of the students are in classes with 10 students
+sample_2_mean <- (num_large_2*35 + num_small_2*10)/50 
+num_large_3 <- sum(random_sample_3 <= 70)
+num_small_3 <- 50 - num_large_3
+sample_3_mean <- (num_large_3*35 + num_small_3*10)/50
+num_large_4 <- sum(random_sample_4 <= 70)
+num_small_4 <- 50 - num_large_4
+sample_4_mean <- (num_large_4*35 + num_small_4*10)/50
+num_large_5 <- sum(random_sample_5 <= 70)
+num_small_5 <- 50 - num_large_5
+sample_5_mean <- (num_large_5*35 + num_small_5*10)/50
+num_large_6 <- sum(random_sample_6 <= 70)
+num_small_6 <- 50 - num_large_6
+sample_6_mean <- (num_large_6*35 + num_small_6*10)/50
+c(sample_2_mean,sample_3_mean,sample_4_mean,sample_5_mean,sample_6_mean)
+```
+
+In every sample we took, the average class size of the students in the sample was greater than $20$. Why is this? The reason is that members of our sample more likely to have been randomly selected from the larger classes, because of the very fact that these classes have more students and so more chances to be drawn from. The probability of observing a class depends on the size of the class! This type of seeming inconsistency between the average class size of teachers and students is called the inspection paradox and arises in other situations where larger values are more likely to be observed, such as bus waiting times - this example is illustrated in [a brilliant article by Jake VanderPlas](https://jakevdp.github.io/blog/2018/09/13/waiting-time-paradox/).
 
 [^1]: Annie Herbert et al. “The spectre of Berkson’s paradox: Collider bias in
-Covid-19 research”. In: *Significance* 17.4 (2020), pp. 6–7. doi: [10.1111/1740-9713.01413](https://
-doi.org/10.1111/1740-9713.01413).
+Covid-19 research”. In: *Significance* 17.4 (2020), pp. 6–7. DOI: [10.1111/1740-9713.01413](https://doi.org/10.1111/1740-9713.01413).

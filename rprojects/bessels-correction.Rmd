@@ -1,11 +1,6 @@
 ---
 title: "Bessel's Correction"
-output:
-  html_document:
-    css: "r_style.css"
-    highlight: pygments
-    includes: 
-      in_header: r_header.html
+output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
