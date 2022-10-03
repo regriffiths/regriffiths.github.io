@@ -16,7 +16,7 @@ In 1733 Georges Buffon posed the question[^1]:
 
 > When dropping a needle of length l on a floor made up of parallel strips of width $w>l$, what is the probability, $p$, that the needle crosses a border between two strips?
 
-The solution was eventually found to be $$p=\frac{2l}{\pi w},$$ which can be rearranged to get $$\pi=\frac{2l}{pw}.$$ This means that if we can estimate $p$, by dropping many needles on a floor with parallel lines on it and finding the proportion that cross a line (this works because we can view the needle drops as realisations of independent $X\sim\text{Bernoulli}(p)$ random variables and use the law of large numbers to say that the proportion converges almost surely to $\mathbb{E}(X)=p$), we are able to estimate $π$! Let's try with 5000 needles.
+The solution was eventually found to be $$p=\frac{2l}{\pi w},$$ which can be rearranged to get $$\pi=\frac{2l}{pw}.$$ This means that if we can estimate $p$, by dropping many needles on a floor with parallel lines on it and finding the proportion that cross a line (this works because we can view the needle drops as realisations of independent $X\sim\text{Bernoulli}(p)$ random variables and use the law of large numbers to say that the proportion converges almost surely to $\mathbb{E}(X)=p$), we are able to estimate $π$! Let's try with $5000$ needles.
 
 ```{r, fig.height=6, fig.width=9}
 n <- 5000

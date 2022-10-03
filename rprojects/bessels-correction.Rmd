@@ -23,7 +23,7 @@ sample_mean <- mean(sample_xs)
 sample_mean
 ```
 
-This is obviously somewhat different from our true mean of $0$. Now suppose we want to use our sample of size 20 to estimate the variance of $X$. Our first thought might be to take the average of the squared distance of each $x_i$ in our sample from our calculated sample mean. To see a problem with this approach let's plot our sample, sample mean and true mean along with the probability density function for $X\sim N(0,1)$.
+This is obviously somewhat different from our true mean of $0$. Now suppose we want to use our sample of size $20$ to estimate the variance of $X$. Our first thought might be to take the average of the squared distance of each $x_i$ in our sample from our calculated sample mean. To see a problem with this approach let's plot our sample, sample mean and true mean along with the probability density function for $X\sim N(0,1)$.
 ```{r, echo=FALSE}
 par(mar=c(5,3,2,2))
 ```
